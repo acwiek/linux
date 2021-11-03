@@ -15,3 +15,5 @@ void __cyg_profile_func_exit(void *this_fn, void *call_site) {
   printk("tpm_addr_exit: 0x%px 0x%px \n", this_fn, call_site);
 }
 
+EXPORT_SYMBOL(__cyg_profile_func_enter);
+EXPORT_SYMBOL(__cyg_profile_func_exit);
