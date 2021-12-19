@@ -98,6 +98,24 @@ again:
 static int wait_startup(struct tpm_chip *chip, int l)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
+	while(1) {
+		u8 access = 0;
+		int rc = tpm_tis_read8(priv, TPM_ACCESS(l), &access);
+		if (rc < 0) {
+			printk("continue\n");
+			printk("\n");
+			tpm_msleep(3000);
+			continue;
+		}
+		if (access & TPM_ACCESS_VALID)
+			printk("access & TPM_ACCESS_VALID\n");
+		else {
+			printk("!access = %d & TPM_ACCESS_VALID\n", access);
+		}
+		printk("\n");
+		tpm_msleep(3000);
+	}
+
 	unsigned long stop = jiffies + chip->timeout_a;
 
 	do {

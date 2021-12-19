@@ -38,6 +38,9 @@
 
 #define MAX_SPI_FRAMESIZE 64
 
+#define DBG__INT(fmt, ...) printk(fmt "%s", __VA_ARGS__);
+#define DBG_PRINT_FUNCTION(...) DBG__INT(__VA_ARGS__, "\n")
+
 /*
  * TCG SPI flow control is documented in section 6.4 of the spec[1]. In short,
  * keep trying to read from the device until MISO goes high indicating the
@@ -54,18 +57,29 @@ static int tpm_tis_spi_flow_control(struct tpm_tis_spi_phy *phy,
 	if ((phy->iobuf[3] & 0x01) == 0) {
 		// handle SPI wait states
 		for (i = 0; i < TPM_RETRY; i++) {
+//	        usleep_range(1000000, 1000001);
+//			DBG_PRINT_FUNCTION("%d", i)
+
+
 			spi_xfer->len = 1;
 			spi_message_init(&m);
 			spi_message_add_tail(spi_xfer, &m);
 			ret = spi_sync_locked(phy->spi_device, &m);
-			if (ret < 0)
+			if (ret < 0) {
+				DBG_PRINT_FUNCTION("tpm_tis_spi_flow_control: error - ret < 0")
 				return ret;
-			if (phy->iobuf[0] & 0x01)
+			}
+			if (phy->iobuf[0] & 0x01) {
+				DBG_PRINT_FUNCTION("tpm_tis_spi_flow_control: ok i(%d) == TPM_RETRY(%d)", i, TPM_RETRY)
 				break;
+
+			}
 		}
 
-		if (i == TPM_RETRY)
+		if (i == TPM_RETRY) {
+			DBG_PRINT_FUNCTION("tpm_tis_spi_flow_control: i(%d) == TPM_RETRY(%d)", i, TPM_RETRY)
 			return -ETIMEDOUT;
+		}
 	}
 
 	return 0;
@@ -85,6 +99,7 @@ int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 	while (len) {
 		transfer_len = min_t(u16, len, MAX_SPI_FRAMESIZE);
 
+
 		phy->iobuf[0] = (in ? 0x80 : 0) | (transfer_len - 1);
 		phy->iobuf[1] = 0xd4;
 		phy->iobuf[2] = addr >> 8;
@@ -99,14 +114,18 @@ int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 		spi_message_init(&m);
 		spi_message_add_tail(&spi_xfer, &m);
 		ret = spi_sync_locked(phy->spi_device, &m);
-		if (ret < 0)
+		if (ret < 0) {
+			DBG_PRINT_FUNCTION("spi_sync_locked < 0")
 			goto exit;
+		}
 
 		/* Flow control transfers are receive only */
 		spi_xfer.tx_buf = NULL;
 		ret = phy->flow_control(phy, &spi_xfer);
-		if (ret < 0)
+		if (ret < 0) {
+			DBG_PRINT_FUNCTION("phy->flow_control(phy, &spi_xfer) < 0\n")
 			goto exit;
+		}
 
 		spi_xfer.cs_change = 0;
 		spi_xfer.len = transfer_len;
@@ -124,8 +143,10 @@ int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 		spi_message_add_tail(&spi_xfer, &m);
 		reinit_completion(&phy->ready);
 		ret = spi_sync_locked(phy->spi_device, &m);
-		if (ret < 0)
+		if (ret < 0) {
+			DBG_PRINT_FUNCTION("spi_sync_locked(phy->spi_device, &m) < 0")
 			goto exit;
+		}
 
 		if (in) {
 			memcpy(in, phy->iobuf, transfer_len);
@@ -194,8 +215,10 @@ int tpm_tis_spi_init(struct spi_device *spi, struct tpm_tis_spi_phy *phy,
 		     int irq, const struct tpm_tis_phy_ops *phy_ops)
 {
 	phy->iobuf = devm_kmalloc(&spi->dev, MAX_SPI_FRAMESIZE, GFP_KERNEL);
-	if (!phy->iobuf)
+	if (!phy->iobuf) {
+		DBG_PRINT_FUNCTION("!phy");
 		return -ENOMEM;
+	}
 
 	phy->spi_device = spi;
 
@@ -217,16 +240,22 @@ static int tpm_tis_spi_probe(struct spi_device *dev)
 
 	phy = devm_kzalloc(&dev->dev, sizeof(struct tpm_tis_spi_phy),
 			   GFP_KERNEL);
-	if (!phy)
+	if (!phy) {
+		DBG_PRINT_FUNCTION("!phy");
 		return -ENOMEM;
+	}
 
 	phy->flow_control = tpm_tis_spi_flow_control;
 
 	/* If the SPI device has an IRQ then use that */
-	if (dev->irq > 0)
+	if (dev->irq > 0) {
+		DBG_PRINT_FUNCTION("dev->irq > 0");
 		irq = dev->irq;
-	else
+	}
+	else {
+		DBG_PRINT_FUNCTION("dev->irq !> 0");
 		irq = -1;
+	}
 
 	init_completion(&phy->ready);
 	return tpm_tis_spi_init(dev, phy, irq, &tpm_spi_phy_ops);
@@ -240,10 +269,16 @@ static int tpm_tis_spi_driver_probe(struct spi_device *spi)
 	tpm_tis_spi_probe_func probe_func;
 
 	probe_func = of_device_get_match_data(&spi->dev);
-	if (!probe_func && spi_dev_id)
+
+	if (!probe_func && spi_dev_id) {
+		DBG_PRINT_FUNCTION("!probe_func && spi_dev_id");
 		probe_func = (tpm_tis_spi_probe_func)spi_dev_id->driver_data;
-	if (!probe_func)
+	}
+
+	if (!probe_func) {
+		DBG_PRINT_FUNCTION("!probe_func");
 		return -ENODEV;
+	}
 
 	return probe_func(spi);
 }
