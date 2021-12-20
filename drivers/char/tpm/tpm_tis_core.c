@@ -95,25 +95,71 @@ again:
  * 'TPM has gone through its self test and initialization and has established
  * correct values in the other bits.'
  */
+
+u8 test(struct tpm_tis_data *priv, int l) {
+	u8 data = 0;
+	printk("read addr 0x%x\n", 0x1234);
+	int rc = tpm_tis_read8(priv, 0x1234, &data);
+	if (rc < 0) {
+		printk("read failed with = 0x%x\n", rc);
+		printk("\n");
+		return rc;
+	}
+
+	printk("received 0x%x\n", data);
+	printk("\n");
+	return rc;
+}
+
+u16 test2(struct tpm_tis_data *priv, int l) {
+	u16 data = 0;
+	printk("read addr 0x%x\n", 0x1234);
+	int rc = tpm_tis_read16(priv, 0x1234, &data);
+
+	if (rc < 0) {
+		printk("read failed with = 0x%x\n", rc);
+		printk("\n");
+		return rc;
+	}
+
+	printk("received 0x%x\n", data);
+	printk("\n");
+	return rc;
+}
+
+
+u8 test3(struct tpm_tis_data *priv, int l) {
+	printk("write  data 0x%x @ addr 0x%x\n", 0x12, 0x34);
+	int rc = tpm_tis_write8(priv, 0x34, 0x12);
+	if (rc < 0) {
+		printk("write failed with = 0x%x\n", rc);
+		printk("\n");
+		return rc;
+	}
+	return rc;
+}
+
+
+
+
 static int wait_startup(struct tpm_chip *chip, int l)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
+
+//	test(priv, l);
+	uint8_t bufffer[15];
 	while(1) {
-		u8 access = 0;
-		int rc = tpm_tis_read8(priv, TPM_ACCESS(l), &access);
-		if (rc < 0) {
-			printk("continue\n");
-			printk("\n");
-			tpm_msleep(3000);
-			continue;
-		}
-		if (access & TPM_ACCESS_VALID)
-			printk("access & TPM_ACCESS_VALID\n");
-		else {
-			printk("!access = %d & TPM_ACCESS_VALID\n", access);
-		}
-		printk("\n");
+
+		test(priv, 0);
 		tpm_msleep(3000);
+
+		test(priv, 0);
+		tpm_msleep(3000);
+
+		test3(priv, 0);
+		tpm_msleep(3000);
+
+
 	}
 
 	unsigned long stop = jiffies + chip->timeout_a;

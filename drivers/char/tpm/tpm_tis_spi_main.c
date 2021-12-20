@@ -96,9 +96,13 @@ int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 
 	spi_bus_lock(phy->spi_device->master);
 
+	printk("addr 0x%x len: %d\n", addr, len);
+
+
 	while (len) {
 		transfer_len = min_t(u16, len, MAX_SPI_FRAMESIZE);
 
+		printk("%d\n", (in ? 0x80 : 0));
 
 		phy->iobuf[0] = (in ? 0x80 : 0) | (transfer_len - 1);
 		phy->iobuf[1] = 0xd4;
