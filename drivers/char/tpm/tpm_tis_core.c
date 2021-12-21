@@ -106,7 +106,7 @@ u8 test(struct tpm_tis_data *priv, int l) {
 		return rc;
 	}
 
-	printk("received 0x%x\n", data);
+	printk("read data success, received 0x%x\n", data);
 	printk("\n");
 	return rc;
 }
@@ -122,20 +122,22 @@ u16 test2(struct tpm_tis_data *priv, int l) {
 		return rc;
 	}
 
-	printk("received 0x%x\n", data);
+	printk("read data success, received 0x%x\n", data);
 	printk("\n");
 	return rc;
 }
 
 
 u8 test3(struct tpm_tis_data *priv, int l) {
-	printk("write  data 0x%x @ addr 0x%x\n", 0x12, 0x34);
+	printk("write data 0x%x @ addr 0x%x\n", 0x12, 0x34);
 	int rc = tpm_tis_write8(priv, 0x34, 0x12);
 	if (rc < 0) {
 		printk("write failed with = 0x%x\n", rc);
 		printk("\n");
 		return rc;
 	}
+	printk("write data success\n");
+	printk("\n");
 	return rc;
 }
 
@@ -150,12 +152,14 @@ static int wait_startup(struct tpm_chip *chip, int l)
 	uint8_t bufffer[15];
 	while(1) {
 
+		// read uint8 test
 		test(priv, 0);
 		tpm_msleep(3000);
 
-		test(priv, 0);
-		tpm_msleep(3000);
+//		test(priv, 0);
+//		tpm_msleep(3000);
 
+		// write uint8 test
 		test3(priv, 0);
 		tpm_msleep(3000);
 

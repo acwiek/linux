@@ -57,10 +57,6 @@ static int tpm_tis_spi_flow_control(struct tpm_tis_spi_phy *phy,
 	if ((phy->iobuf[3] & 0x01) == 0) {
 		// handle SPI wait states
 		for (i = 0; i < TPM_RETRY; i++) {
-//	        usleep_range(1000000, 1000001);
-//			DBG_PRINT_FUNCTION("%d", i)
-
-
 			spi_xfer->len = 1;
 			spi_message_init(&m);
 			spi_message_add_tail(spi_xfer, &m);
@@ -80,6 +76,8 @@ static int tpm_tis_spi_flow_control(struct tpm_tis_spi_phy *phy,
 			DBG_PRINT_FUNCTION("tpm_tis_spi_flow_control: i(%d) == TPM_RETRY(%d)", i, TPM_RETRY)
 			return -ETIMEDOUT;
 		}
+	} else {
+		DBG_PRINT_FUNCTION("phy->iobuf[3] & 0x01) == 0 != ", phy->iobuf[3]);
 	}
 
 	return 0;
@@ -96,13 +94,9 @@ int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 
 	spi_bus_lock(phy->spi_device->master);
 
-	printk("addr 0x%x len: %d\n", addr, len);
-
 
 	while (len) {
 		transfer_len = min_t(u16, len, MAX_SPI_FRAMESIZE);
-
-		printk("%d\n", (in ? 0x80 : 0));
 
 		phy->iobuf[0] = (in ? 0x80 : 0) | (transfer_len - 1);
 		phy->iobuf[1] = 0xd4;
@@ -125,6 +119,8 @@ int tpm_tis_spi_transfer(struct tpm_tis_data *data, u32 addr, u16 len,
 
 		/* Flow control transfers are receive only */
 		spi_xfer.tx_buf = NULL;
+		printk("phy->iobuf[3] = %d", phy->iobuf[3]);
+
 		ret = phy->flow_control(phy, &spi_xfer);
 		if (ret < 0) {
 			DBG_PRINT_FUNCTION("phy->flow_control(phy, &spi_xfer) < 0\n")
