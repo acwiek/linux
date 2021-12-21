@@ -77,7 +77,7 @@ static int tpm_tis_spi_flow_control(struct tpm_tis_spi_phy *phy,
 			return -ETIMEDOUT;
 		}
 	} else {
-		DBG_PRINT_FUNCTION("phy->iobuf[3] & 0x01) == 0 != ", phy->iobuf[3]);
+		DBG_PRINT_FUNCTION("phy->iobuf[3] & 0x01) == 0 != %x", phy->iobuf[3]);
 	}
 
 	return 0;
